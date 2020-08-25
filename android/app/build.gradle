@@ -78,7 +78,7 @@ import com.android.build.OutputFile
  */
 
 project.ext.react = [
-    enableHermes: false,  // clean and rebuild if changing
+    enableHermes: true,  // clean and rebuild if changing
 ]
 
 apply from: "../../node_modules/react-native/react.gradle"
@@ -119,6 +119,10 @@ def jscFlavor = 'org.webkit:android-jsc:+'
  * and the benefits of using Hermes will therefore be sharply reduced.
  */
 def enableHermes = project.ext.react.get("enableHermes", false);
+
+def releaseTimeYMD() {
+    return new Date().format("yyyyMMdd")
+}
 
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
@@ -190,6 +194,10 @@ android {
                         versionCodes.get(abi) * 1048576 + defaultConfig.versionCode
             }
 
+        }
+        variant.outputs.all { output ->
+            outputFileName = new File("../../../release", "one-" + buildType.name + "_v" +
+                    defaultConfig.versionName + "." + defaultConfig.versionCode + "_${releaseTimeYMD()}.apk" );
         }
     }
 }

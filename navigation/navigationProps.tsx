@@ -30,7 +30,7 @@ export const navigationProps:INavigationProps[] = [
         ...headerOptions,
         headerRight: ( {tintColor}:any) => (
           <TouchableOpacity onPress={() => navigation.navigate('SelectPosition',{max:2})}>
-            <Text style={{color:tintColor, fontSize: 18, paddingHorizontal: 16}}>移箱<CaiNiao name='xiayiyeqianjinchakangengduo' size={18} color={tintColor}/></Text>
+            <Text style={{color:tintColor, fontSize: 18, paddingHorizontal: 16}}>堆场俯视图<CaiNiao name='xiayiyeqianjinchakangengduo' size={18} color={tintColor}/></Text>
           </TouchableOpacity>
         )
       }

@@ -1,7 +1,6 @@
 import { AnyAction } from 'redux';
 import { REQUEST_MOVELIST, RECEIVED_MOVELIST, UPDATING_MOVELIST, UPDATED_MOVELIST } from './actionType';
-import { moveListStatusMap } from '../../constants';
-
+import { Toast, Portal } from '@ant-design/react-native';
 
 export interface record {
   applyType: any, 
@@ -25,17 +24,29 @@ export interface record {
 
 export type RECORD_TYPE = Partial<record>;
 
+export interface IGroup {
+  [key:string]: Array<RECORD_TYPE>
+}
+
 export interface IInitialState {
-  records: RECORD_TYPE[],
-  receiving: boolean,
-  updating: boolean
+  records: Array<RECORD_TYPE>;
+  group: IGroup;
+  moves: Array<RECORD_TYPE>;
+  trucks: Array<string>;
+  receiving: boolean;
+  updating: boolean;
 }
 
 const initialState:IInitialState = {
   records: [],
+  moves: [],
+  trucks: [],
+  group: {},
   receiving: false,
   updating: false
 }
+
+let key:number = -999;
 
 export default function moveList(state=initialState, action:AnyAction) {
   const { type, payload } = action;
@@ -48,27 +59,17 @@ export default function moveList(state=initialState, action:AnyAction) {
     case RECEIVED_MOVELIST:
       return {
         ...state,
+        ...payload,
         receiving: false,
-        records: payload.records.map((item:RECORD_TYPE) => {
-          Object.keys(item).forEach((key) => {
-            switch(key) {
-              case 'applyType' :
-                item.applyTypeName = moveListStatusMap[item[key]];
-              break;
-              case 'ieFlag' :
-                item.ieFlagName = item[key] === 'I' ? '内贸' : '外贸';
-              break;
-            }
-          });
-          return { ...item }
-        })
       }
     case UPDATING_MOVELIST:
+      key = Toast.loading('提交中...', 0)
       return {
         ...state,
         updating: true
       }
     case UPDATED_MOVELIST:
+      Portal.remove(key);
       return {
         ...state,
         updating: false

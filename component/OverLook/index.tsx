@@ -30,6 +30,8 @@ interface IProps {
   singleSelect?:boolean;
   isBig?:boolean;
   max?:number;
+  controlType?:string
+  vt?:string
   //minScale?:number;
 }
 
@@ -87,6 +89,8 @@ const OverLookWrap = (options:IOptions={}) => {
       visiable=false,
       max=1, 
       //minScale=0.5,
+      controlType,
+      vt,
       selected=[], 
       onSelectedSite, 
       data, 
@@ -99,7 +103,8 @@ const OverLookWrap = (options:IOptions={}) => {
       if(viewHeight >= mapHeight &&  viewWidth >= mapWidth) {
         minScale = 1;
       }
-      const baseScale = new Animated.Value(minScale);
+      //console.log(minScale)
+      const baseScale = new Animated.Value(1);
       const pinchScale = new Animated.Value(1);
       return {
         translateX:new Animated.Value(0),
@@ -166,7 +171,9 @@ const OverLookWrap = (options:IOptions={}) => {
       selected,
       isBig,
       max,
-      axisColor
+      axisColor, 
+      controlType,
+      vt
     }), [
       siteWidth,
       siteHeight,
@@ -176,7 +183,9 @@ const OverLookWrap = (options:IOptions={}) => {
       defaultSites,
       singleSelect,
       selected,
-      axisColor
+      axisColor,
+      controlType,
+      vt
     ]);
     return (
       data && visiable ? 
@@ -195,8 +204,8 @@ const OverLookWrap = (options:IOptions={}) => {
               <AnimatedSvg
                 style={{
                   backgroundColor: 'transparent',
-                  marginLeft: centerX * minScale,
-                  marginTop: centerY * minScale,
+                  //marginLeft: centerX * minScale,
+                  //marginTop: centerY * minScale,
                   width: mapWidth,
                   height: mapHeight,
                     transform: [

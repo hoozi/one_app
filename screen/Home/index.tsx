@@ -1,15 +1,27 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Button, Toast } from '@ant-design/react-native';
-import { View, SafeAreaView, StyleSheet, StatusBar, FlatList, Text, TouchableHighlight } from 'react-native';
+import { Button, Toast, List, Modal } from '@ant-design/react-native';
+import { 
+  View, 
+  SafeAreaView, 
+  StyleSheet, 
+  StatusBar, 
+  FlatList, 
+  Text, 
+  TouchableHighlight,
+  TouchableOpacity, 
+  ScrollView 
+} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { color } from '../../constants';
-import { fetchMoveList, update } from './action';
+import { fetchMoveList, update, updateWhenNoCtnNo } from './action';
 import Sidebar from '../../component/Sidebar';
 import Field from '../../component/Field';
 import CaiNiao from '../../icon/CaiNiao';
 import Empty from '../../component/Empty';
 import CenterLoading from '../../component/CenterLoading';
+import { RECORD_TYPE } from './reducer';
+import { reject } from 'lodash';
 
 const fieldRows = [
   {
@@ -37,7 +49,7 @@ const fieldRows = [
   }
 ]
 const TaskCard: React.FC<any> = props => {
-  const { data, navigation, onOk, buttonLoading } = props;
+  const { data, navigation, onOk, buttonLoading, vt } = props;
   const fromPosition = `${data.areaCode || '-'}/${data.rowCode || '-'}/${data.columnName || '-'}/${data.floor || '-'}`;
   const toPosition = `${data.moveAreaCode || '-'}/${data.moveRowCode || '-'}/${data.moveColumnName || '-'}/${data.moveFloor || '-'}`;
   const position = data.areaCode ? fromPosition : toPosition;
@@ -50,15 +62,18 @@ const TaskCard: React.FC<any> = props => {
           <Text style={styles.status}>
             {data.applyTypeName}
           </Text>
-          <Button 
-            type='primary' 
-            size='small' 
-            loading={buttonLoading}
-            disabled={buttonLoading}
-            style={styles.okButton} 
-            onPress={() => onOk && onOk(data)}>
-              <Text style={{fontWeight: 'bold', fontSize: 15}}>确 认</Text>
-          </Button>
+          {
+            vt!=='back' &&
+            <Button 
+              type='primary' 
+              size='small' 
+              loading={buttonLoading}
+              disabled={buttonLoading}
+              style={styles.okButton} 
+              onPress={() => onOk && onOk(data)}>
+                <Text style={{fontWeight: 'bold', fontSize: 15}}>确 认</Text>
+            </Button>
+          }
         </View>
         <View style={styles.taskCardBody}>
           <Field
@@ -68,9 +83,10 @@ const TaskCard: React.FC<any> = props => {
           />
         </View>
         <TouchableHighlight underlayColor='transparent' onPress={() => {
-          return data.applyType === 'T' || data.applyType === 'SHIPMENT' ? null : navigation.navigate('SelectPosition', {
+          return vt!=='back' && (data.applyType === 'SHIPMENT' ) ? null : navigation.navigate('SelectPosition', {
             position:data.applyType === 'M' ? toPosition : position,
-            id: data.id
+            id: data.id,
+            vt
           });
         }} style={{width: '100%'}}>
           <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingRight: 8}}>
@@ -85,9 +101,9 @@ const TaskCard: React.FC<any> = props => {
               </View>
             </View>
             {
-                (data.applyType !== 'T' && data.applyType !== 'SHIPMENT') &&
-                <CaiNiao name='xiayiyeqianjinchakangengduo' size={22} color={color.text_base_color}/>
-              }
+              (vt==='back' || data.applyType !== 'SHIPMENT') &&
+              <CaiNiao name='xiayiyeqianjinchakangengduo' size={22} color={color.text_base_color}/>
+            }
           </View>
         </TouchableHighlight>
       </View>
@@ -96,60 +112,183 @@ const TaskCard: React.FC<any> = props => {
 }
 
 const Home:React.FC<any> = props => {
+  const { records,moves,trucks,receiving,updating } = useSelector((state:any) => state.moveList);
+  const group = useSelector((state:any) => state.moveList.group);
+  const [truckActive, setTruckActive] = useState<number|null>(null);
   const [searchType, setSearchType] = useState<string>('yard');
+  const [viewType, setViewType] = useState<string>('truck');
+  const [list, setListByTruckNo] = useState<Array<RECORD_TYPE>>([]);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const { records,receiving,updating } = useSelector((state:any) => state.moveList);
   const dispatch = useDispatch();
   const handleSiteSubmit = useCallback((data) => {
-    dispatch(update({...data, type:searchType}, () => {
-      Toast.success('提交成功',1,() => {
-        dispatch(fetchMoveList({}, searchType));
+    if(data.applyType === 'T') {
+      if(data.ctnNo &&!data.areaCode) {
+        return Toast.fail('原位置不能为空');
+      } else if(!data.ctnNo) {
+        return Modal.prompt(
+          '输入箱号',
+          '请补全箱号信息',
+          ctnNo => new Promise((resolve, reject) => {
+            try {
+              dispatch(updateWhenNoCtnNo({
+                appMove: data,
+                ctnNo
+              },() => {
+                Toast.success('提交成功', 1, () => {
+                  resolve();
+                  getMoveList({}, searchType, viewType, 0);
+                });
+              }))
+            } catch(e) {
+              reject();
+            }
+          }),
+          'default',
+          undefined,
+          ['请输入']
+        )
+      }
+    }
+    dispatch(update({...data, type:searchType}, viewType, () => {
+      Toast.success('提交成功', 1, () => {
+        getMoveList({}, searchType, viewType, 0);
       });
     }));
-  }, [searchType]);
-  const getMoveList = useCallback((payload:any={}, type:string=searchType) => {
-    dispatch(fetchMoveList(payload, type));
-  },[searchType]);
-  const handleMoveListRefresh = useCallback(() => {
+  }, [searchType, trucks, group]);
+  const getMoveList = useCallback((payload:any={}, type:string=searchType, vt:string, ta:number | null ) => {
+    const { callback, ...restPayload } = payload;
+    dispatch(fetchMoveList({
+      ...restPayload,
+      callback(group:any) {
+        if(vt === 'truck' || vt === 'back') {
+          const truckNo = trucks[ta??0];
+          setTruckActive(ta)
+          setListByTruckNo(group[truckNo]);
+        }
+        setViewType(vt);
+        callback && callback();
+      }
+    }, type, vt));
+  },[searchType, trucks]);
+  const handleMoveListRefresh = useCallback((vt:string, ta:number) => {
     setRefreshing(true);
     getMoveList({
       callback() {
         setRefreshing(false);
       }
-    }, searchType)
+    }, searchType, vt, ta)
   }, [searchType, refreshing])
+  const handleSelectTruck = useCallback((index,t) => {
+    const currentList = group[t];
+    setListByTruckNo(currentList);
+    setTruckActive(index);
+  }, [group])
   useFocusEffect(
     useCallback(
     () => {
-      getMoveList({}, searchType)
-      return;
-    },[searchType])
+      getMoveList({}, searchType, viewType, 0)
+    },[searchType, viewType])
   );
   const handleTabChange = useCallback((selected, item) => {
-    setSearchType(item.value)
-    getMoveList({},item.value);
-  }, [])
+    setSearchType(item.value);
+    setViewType(item.extra);
+    setTruckActive(0);
+    getMoveList({},item.value, item.extra, truckActive);
+  }, [truckActive])
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={color.brand_color} barStyle='light-content'/>
       <Sidebar sideItems={[
         {
-          title: (type: string) => <><CaiNiao name='zitigui' size={16} color={type === 'active' ? color.text_base_color: '#fff'}/> 堆场</>,
-          value: 'yard'
-        }]} onSelectedChange={handleTabChange}/>
+          title: '车辆',
+          value: 'yard',
+          extra: 'truck'
+        },
+        {
+          title: '移箱',
+          value: 'yard',
+          extra: 'move'
+        },
+        {
+          title: '回退',
+          value: 'yard',
+          extra: 'back'
+        }
+        ]} onSelectedChange={handleTabChange}/>
       {
         receiving && !refreshing ?
         <CenterLoading/> :
         records.length > 0 ?
-        <FlatList
-          keyExtractor={item => item.id+''}
-          style={{flex: 1}}
-          data={records}
-          onRefresh={handleMoveListRefresh}
-          refreshing={refreshing}
-          renderItem = {({item}) => <TaskCard navigation={props.navigation} onOk={handleSiteSubmit} data={item} buttonLoading={updating}/>}
-          contentContainerStyle={{paddingHorizontal: 16}}
-        /> : <Empty/>
+        viewType === 'truck' || viewType === 'back' ?
+        <View style={{flex:1,flexDirection: 'row'}}>
+          <View style={{
+            width:150, 
+            backgroundColor: '#fff', 
+            borderRightWidth: StyleSheet.hairlineWidth,
+            borderRightColor: 'rgba(50, 59, 90, 0.15)'
+          }}>
+            <ScrollView>
+              {
+                trucks.map((t:string, index:number) => (
+                    <TouchableHighlight 
+                      key={t}
+                      underlayColor='#eee' 
+                      style={{height:42,justifyContent: 'center', paddingLeft:24}} 
+                      onPress={() => handleSelectTruck(index,t)}
+                    >
+                      <Text style={{color: truckActive!==null && truckActive === index ? color.brand_color : color.text_base_color}}>{t}</Text>
+                    </TouchableHighlight>
+                  )
+                )
+              }
+            </ScrollView>
+          </View>
+          <View style={{flex:1}}>
+            {
+              list??[].length ? 
+              <FlatList
+                keyExtractor={item => item.id+''}
+                style={{flex: 1}}
+                data={list}
+                onRefresh={() => handleMoveListRefresh(viewType, 0)}
+                refreshing={refreshing}
+                renderItem = {({item}) => <TaskCard vt={viewType} navigation={props.navigation} onOk={handleSiteSubmit} data={item} buttonLoading={updating}/>}
+                contentContainerStyle={{paddingHorizontal: 16}}
+              /> :
+              <Empty>
+                <View style={styles.emptyChildContainer}>
+                  <Text style={{fontSize: 16, color:'#84899c'}}>请先选择右边车牌</Text>
+                </View>
+              </Empty>
+            }
+          </View>
+        </View> : 
+          moves.length ? 
+          <FlatList
+            keyExtractor={item => item.id+''}
+            style={{flex: 1}}
+            data={moves}
+            onRefresh={() => handleMoveListRefresh('move', 1)}
+            refreshing={refreshing}
+            renderItem = {({item}) => <TaskCard vt={viewType} navigation={props.navigation} onOk={handleSiteSubmit} data={item} buttonLoading={updating}/>}
+            contentContainerStyle={{paddingHorizontal: 16}}
+          /> : 
+          <Empty>
+            <View style={styles.emptyChildContainer}>
+              <Text style={{fontSize: 16, color:'#84899c'}}>暂无数据</Text>
+              <TouchableOpacity onPress={() => getMoveList({}, searchType, 'move', 1)}>
+                <Text style={styles.refresh}>刷新重试</Text>
+              </TouchableOpacity>
+            </View>
+          </Empty>: 
+        <Empty>
+          <View style={styles.emptyChildContainer}>
+            <Text style={{fontSize: 16, color:'#84899c'}}>暂无数据</Text>
+            <TouchableOpacity onPress={() => getMoveList({}, searchType, viewType, 0)}>
+              <Text style={styles.refresh}>刷新重试</Text>
+            </TouchableOpacity>
+          </View>
+        </Empty>
       }
       
       {/* <Table columns={[
@@ -257,7 +396,8 @@ const styles = StyleSheet.create({
     color: 'rgba(50, 59, 90, 0.5)'
   },
   fieldValue: {
-    fontSize: 14,
+    fontSize: 20,
+    fontWeight: 'bold',
     color: 'rgba(50, 59, 90, 0.8)'
   },
   okButton: {
@@ -284,6 +424,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#fff',
     overflow: 'hidden',
+  },
+  emptyChildContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8
+  },
+  refresh: {
+    color: color.brand_color,
+    fontSize: 16,
+    marginLeft:4
   }
 })
 

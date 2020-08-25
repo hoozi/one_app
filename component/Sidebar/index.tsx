@@ -5,6 +5,7 @@ import { color } from '../../constants';
 interface ISideItem {
   title?: string | React.ReactElement | Function;
   value?: any;
+  extra?: string
 }
 
 interface IColorMap {
@@ -39,11 +40,11 @@ const Sidebar:React.FC<IProps> = props => {
   const { theme = 'dark', selected = 0, onSelectedChange, sideItems=[] } = props;
   const [ sideSelected, setSelected ] = useState<number>(selected);
   const handleSideItemChange = useCallback((selected:number, item:any) => {
-    if(selected !== sideSelected) {
+    
       setSelected(selected);
       onSelectedChange && onSelectedChange(selected, item);
-    }
-  }, [sideSelected]);
+    
+  }, []);
   return (
     <View style={[styles.sideContainer, themeColorMap[theme].barColor]}>
         {
@@ -83,7 +84,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingLeft:8, 
     borderTopLeftRadius: 4, 
-    borderBottomLeftRadius: 4
+    borderBottomLeftRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   sideLigthItem: {
     backgroundColor: '#fff',
@@ -93,7 +96,7 @@ const styles = StyleSheet.create({
     color: '#fff'
   },
   sideDarkItemActive: {
-    backgroundColor: color.fill_color,
+    backgroundColor: '#fff',
     color: color.text_base_color
   },
   sideLightItemAction: {

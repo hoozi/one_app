@@ -1,19 +1,43 @@
 import { Toast } from '@ant-design/react-native';
+import groupBy from 'lodash/groupBy';
 import { Dispatch } from 'redux';
-import { queryMoveListForWharf, queryMoveListForYard, updateMoveListForWharf, updateMoveListForYard, updateMoveListForNone } from '../../api/moveList';
+import { queryMoveListForWharf, queryMoveListForYard, queryMoveListForYardBack, updateMoveListForWharf, updateMoveListForYard, updateMoveListForYardBack, updateMoveListForNone, updateMoveListWhenNoCtnNo } from '../../api/moveList';
 import { REQUEST_MOVELIST, RECEIVED_MOVELIST, UPDATING_MOVELIST, UPDATED_MOVELIST } from './actionType';
+import { IGroup,record } from './reducer';
+import { moveListStatusMap } from '../../constants';
 
-export const fetchMoveList = (payload:any={}, type:string='yard'):any => async (dispatch:Dispatch) => {
+export const fetchMoveList = (payload:any={}, type:string='yard', vt:string='truck'):any => async (dispatch:Dispatch) => {
   dispatch(requestMoveList());
   const { callback, ...params } = payload;
-  const queryMoveList = type === 'yard' ? queryMoveListForYard : queryMoveListForWharf
+  const queryMoveList = type === 'yard' ? ((vt==='truck' || vt==='move') ? queryMoveListForYard : queryMoveListForYardBack) : queryMoveListForWharf
   const response = await queryMoveList(params);
   if(!response || response.code!==0) {
-    dispatch(receivedMoveList({records:[]}));
+    dispatch(receivedMoveList({records:[],group:{}}));
     return;
   };
-  dispatch(receivedMoveList(response.data));
-  callback && callback();
+  const { records=[] } = response.data;
+  const mapedRecords = records.map((item:record) => {
+    Object.keys(item).forEach((key) => {
+      switch(key) {
+        case 'applyType' :
+          item.applyTypeName = moveListStatusMap[item[key]];
+        break;
+        case 'ieFlag' :
+          item.ieFlagName = item[key] === 'I' ? '内贸' : '外贸';
+        break;
+      }
+    });
+    return { ...item }
+  })
+  const group:IGroup = groupBy(mapedRecords.filter((r:record) => r.numberPlate), 'numberPlate');
+  const moves = mapedRecords.filter((r:record) => r.applyType === 'M');
+  dispatch(receivedMoveList({
+    records:mapedRecords, 
+    group,
+    trucks: Object.keys(group), 
+    moves
+  }));
+  callback && callback(group);
 }
 
 interface ITypes {
@@ -23,14 +47,26 @@ interface ITypes {
 const types:ITypes = {
   'yard': updateMoveListForYard,
   'wharf': updateMoveListForWharf,
+  'back': updateMoveListForYardBack,
   'none': updateMoveListForNone
 }
 
-export const update = (payload:any, callback?:Function) => async (dispatch: Dispatch) => {
+export const updateWhenNoCtnNo = (payload: any, callback?:Function) => async (dispatch: Dispatch) => {
+  dispatch(updating());
+  const response = await updateMoveListWhenNoCtnNo(payload);
+  if(!response || response.code!==0) {
+    dispatch(updated());
+    return;
+  };
+  dispatch(updated());
+  callback && callback();
+}
+
+export const update = (payload:any, vt:string='truck', callback?:Function) => async (dispatch: Dispatch) => {
   dispatch(updating());
   const { type, ...params } = payload;
-  const updateMoveList = types[type];
-  const response = await updateMoveList({params,size: 999});
+  const updateMoveList = types[vt === 'back' ? 'back' : type];
+  const response = await updateMoveList({...params});
   if(!response || response.code!==0) {
     dispatch(updated());
     return;

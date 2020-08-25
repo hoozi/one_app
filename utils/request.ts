@@ -26,8 +26,8 @@ function checkStatus(response: Response) {
   }
   const errortext:string = codeMessage[response.status] || response.statusText;
   
-  response.status != 401 && Toast.fail(errortext);
-  throw response.status;
+  (response.status != 401 && response.status!=500 ) && Toast.fail(errortext);
+  throw response;
 }
 
 /**
@@ -79,12 +79,23 @@ export default async function request(url: string, options?: any) {
       const json = response.json();
       return json
     })
-    .catch(status => {
+    //.then()
+    .catch(async (response: Response) => {
+      try {
+        const { status } = response;
+        const data = await response.json();
+        
+        if (status === 401 || status === 403) {
+          return navigate('SignOutPlaceholder');
+          //return dispatch.user.removeSession();
+        }
+        if(status === 500 && (data && data.code === 1)) {
+          return Toast.fail(data.msg);
+        }
       //const { dispatch } = store;
       //if(isNil(e.response)) return Toast.offline('服务器无响应');
-      if (status === 401 || status === 403) {
-        return navigate('SignOutPlaceholder');
-        //return dispatch.user.removeSession();
+      } catch(e) {
+        console.log(e)
       }
     });
 }
