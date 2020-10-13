@@ -51,7 +51,7 @@ const Area:React.FC<IProps> = props => {
       areaCode: area.areaCode,
       key: `${area.areaCode}_${siteX+areaX}_${areaY+siteY}_selected`,
       columns: areaY+siteY,
-      _floor: max >=2 ? site.floor+selected.length : (controlType === 'T' ? site.floor : site.floor+1),
+      _floor: max >=2 ? site.floor+selected.length : ((controlType === 'T' && vt!=='back') ? site.floor : site.floor+1),
       _rows: site.rows,
       _columns: site.columns,
       _columnName: site.columnName

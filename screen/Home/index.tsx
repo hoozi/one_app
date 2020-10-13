@@ -57,7 +57,7 @@ const TaskCard: React.FC<any> = props => {
       <View style={styles.taskCard}>
         <View style={styles.taskCardHeader}>
           <Text style={styles.taskCardHeaderText}>
-            {data.ctnNo}
+            {data.ctnNo} <Text style={{color: data.normalFlag === 'Y' ? '#52c41a' : '#f5222d'}}>{data.normalFlag === 'Y' ? '好箱' : '坏箱'}</Text>
           </Text>
           <Text style={styles.status}>
             {data.applyTypeName}
@@ -74,6 +74,10 @@ const TaskCard: React.FC<any> = props => {
                 <Text style={{fontWeight: 'bold', fontSize: 15}}>确 认</Text>
             </Button>
           }
+        </View>
+        <View style={{flexDirection:'row', padding: 8, borderTopWidth: StyleSheet.hairlineWidth,borderTopColor: 'rgba(50, 59, 90, 0.15)'}}>
+          <Text style={{fontSize: 14, marginRight: 4, color: 'rgba(50, 59, 90, 0.5)'}}>备注</Text>
+          <Text style={{fontSize: 14, color: 'rgba(50, 59, 90, 0.8)'}}>{data.remark}</Text>
         </View>
         <View style={styles.taskCardBody}>
           <Field
@@ -117,7 +121,7 @@ const Home:React.FC<any> = props => {
   const [truckActive, setTruckActive] = useState<number|null>(null);
   const [searchType, setSearchType] = useState<string>('yard');
   const [viewType, setViewType] = useState<string>('truck');
-  const [list, setListByTruckNo] = useState<Array<RECORD_TYPE>>([]);
+  //const [list, setListByTruckNo] = useState<Array<RECORD_TYPE>>([]);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const dispatch = useDispatch();
   const handleSiteSubmit = useCallback((data) => {
@@ -163,7 +167,7 @@ const Home:React.FC<any> = props => {
         if(vt === 'truck' || vt === 'back') {
           const truckNo = trucks[ta??0];
           setTruckActive(ta)
-          setListByTruckNo(group[truckNo]);
+          //setListByTruckNo(group[truckNo]);
         }
         setViewType(vt);
         callback && callback();
@@ -180,7 +184,7 @@ const Home:React.FC<any> = props => {
   }, [searchType, refreshing])
   const handleSelectTruck = useCallback((index,t) => {
     const currentList = group[t];
-    setListByTruckNo(currentList);
+   // setListByTruckNo(currentList);
     setTruckActive(index);
   }, [group])
   useFocusEffect(
@@ -194,7 +198,7 @@ const Home:React.FC<any> = props => {
     setViewType(item.extra);
     setTruckActive(0);
     getMoveList({},item.value, item.extra, truckActive);
-  }, [truckActive])
+  }, [truckActive]);
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={color.brand_color} barStyle='light-content'/>
@@ -219,68 +223,15 @@ const Home:React.FC<any> = props => {
         receiving && !refreshing ?
         <CenterLoading/> :
         records.length > 0 ?
-        viewType === 'truck' || viewType === 'back' ?
-        <View style={{flex:1,flexDirection: 'row'}}>
-          <View style={{
-            width:150, 
-            backgroundColor: '#fff', 
-            borderRightWidth: StyleSheet.hairlineWidth,
-            borderRightColor: 'rgba(50, 59, 90, 0.15)'
-          }}>
-            <ScrollView>
-              {
-                trucks.map((t:string, index:number) => (
-                    <TouchableHighlight 
-                      key={t}
-                      underlayColor='#eee' 
-                      style={{height:42,justifyContent: 'center', paddingLeft:24}} 
-                      onPress={() => handleSelectTruck(index,t)}
-                    >
-                      <Text style={{color: truckActive!==null && truckActive === index ? color.brand_color : color.text_base_color}}>{t}</Text>
-                    </TouchableHighlight>
-                  )
-                )
-              }
-            </ScrollView>
-          </View>
-          <View style={{flex:1}}>
-            {
-              list??[].length ? 
-              <FlatList
-                keyExtractor={item => item.id+''}
-                style={{flex: 1}}
-                data={list}
-                onRefresh={() => handleMoveListRefresh(viewType, 0)}
-                refreshing={refreshing}
-                renderItem = {({item}) => <TaskCard vt={viewType} navigation={props.navigation} onOk={handleSiteSubmit} data={item} buttonLoading={updating}/>}
-                contentContainerStyle={{paddingHorizontal: 16}}
-              /> :
-              <Empty>
-                <View style={styles.emptyChildContainer}>
-                  <Text style={{fontSize: 16, color:'#84899c'}}>请先选择右边车牌</Text>
-                </View>
-              </Empty>
-            }
-          </View>
-        </View> : 
-          moves.length ? 
-          <FlatList
-            keyExtractor={item => item.id+''}
-            style={{flex: 1}}
-            data={moves}
-            onRefresh={() => handleMoveListRefresh('move', 1)}
-            refreshing={refreshing}
-            renderItem = {({item}) => <TaskCard vt={viewType} navigation={props.navigation} onOk={handleSiteSubmit} data={item} buttonLoading={updating}/>}
-            contentContainerStyle={{paddingHorizontal: 16}}
-          /> : 
-          <Empty>
-            <View style={styles.emptyChildContainer}>
-              <Text style={{fontSize: 16, color:'#84899c'}}>暂无数据</Text>
-              <TouchableOpacity onPress={() => getMoveList({}, searchType, 'move', 1)}>
-                <Text style={styles.refresh}>刷新重试</Text>
-              </TouchableOpacity>
-            </View>
-          </Empty>: 
+        <FlatList
+          keyExtractor={item => item.id+''}
+          style={{flex: 1}}
+          data={records}
+          onRefresh={() => handleMoveListRefresh(viewType, 0)}
+          refreshing={refreshing}
+          renderItem = {({item}) => <TaskCard vt={viewType} navigation={props.navigation} onOk={handleSiteSubmit} data={item} buttonLoading={updating}/>}
+          contentContainerStyle={{paddingHorizontal: 16}}
+        /> :
         <Empty>
           <View style={styles.emptyChildContainer}>
             <Text style={{fontSize: 16, color:'#84899c'}}>暂无数据</Text>
@@ -288,7 +239,7 @@ const Home:React.FC<any> = props => {
               <Text style={styles.refresh}>刷新重试</Text>
             </TouchableOpacity>
           </View>
-        </Empty>
+        </Empty> 
       }
       
       {/* <Table columns={[

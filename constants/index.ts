@@ -35,7 +35,7 @@ export const theme = {
   segmented_control_color: color.brand_color,  // 同时应用于背景、文字颜色、边框色
 }
 
-export const service_url = 'http://common.weihuanginfo.com';//'http://120.55.88.128';// //'http://192.168.1.15:9999'
+export const service_url = 'http://120.55.88.128';//'http://192.168.1.11:9999';//'http://ctone.weihuanginfo.com';//'http://120.55.88.128';//'http://192.168.1.4:9999';//'http://120.55.88.128';
 
 export interface IMoveListStatusMap<T> {
   [key: string] : T

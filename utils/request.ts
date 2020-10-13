@@ -90,7 +90,7 @@ export default async function request(url: string, options?: any) {
           //return dispatch.user.removeSession();
         }
         if(status === 500 && (data && data.code === 1)) {
-          return Toast.fail(data.msg);
+          return Toast.fail(data.msg, 1);
         }
       //const { dispatch } = store;
       //if(isNil(e.response)) return Toast.offline('服务器无响应');

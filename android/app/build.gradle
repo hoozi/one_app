@@ -196,7 +196,7 @@ android {
 
         }
         variant.outputs.all { output ->
-            outputFileName = new File("../../../release", "one-" + buildType.name + "_v" +
+            outputFileName = new File("./", "one-" + buildType.name + "_v" +
                     defaultConfig.versionName + "." + defaultConfig.versionCode + "_${releaseTimeYMD()}.apk" );
         }
     }

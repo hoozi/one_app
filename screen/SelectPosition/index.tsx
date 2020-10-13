@@ -1,30 +1,17 @@
-import React, { useCallback, useState } from 'react';
-import { View, Text, SafeAreaView, StyleSheet, StatusBar, Dimensions } from 'react-native';
-import { useFocusEffect, useIsFocused } from '@react-navigation/native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, SafeAreaView, StyleSheet, TouchableHighlight, TextInput, ScrollView, Dimensions } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Button, Toast } from '@ant-design/react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { goBack } from '../../navigation';
-import { getMaxRowColumn } from '../../utils';
-import { fetchOverLookForYard } from './action';
+import { fetchOverLookForYard, fetchArea, fetchCtnInfo, resetFindCtn } from './action';
 import { update } from '../Home/action';
 import OverLookWrap from '../../component/OverLook';
 import BayMap from '../../component/BayMap';
 import { color,moveListUpdateType } from '../../constants';
 import CenterLoading from '../../component/CenterLoading';
-const data = [{"id":36466,"areaId":595,"rows":1,"columns":1,"columnName":"1","name":"1","status":0,"floor":1,"flag":0,"maxFloor":7,"ctnList":[{"id":4823,"ctnNo":"TTNU9649410","numberPlate":"ZBASD","ctnSizeType":"20GP","sealNo":"","ctnOwner":"TSL","shipperAgentCode":"","forwarderCode":"","shipperCode":null,"vesselEname":"MAERSK JAIPUR","voyage":"ASD","closeDate":null,"loadPortCode":null,"deliveryPortCode":null,"discPortCode":null,"ieFlag":null,"areaCode":"B","rowCode":1,"columnName":1,"ctnLocationColumn":1,"floor":1,"applyUser":null,"applyTime":null,"confirmUser":"堆场管理","confirmTime":"2020-08-24 11:43:52","workUser":"堆场管理","workTime":"2020-08-24 11:43:57","takePlace":"","returnPlace":"HFDC","normalFlag":"Y","efFlag":"E","grossWeight":null,"tareWeight":null,"netWeight":null,"billNo":null,"inApplyId":3237,"outApplyId":null,"storageDays":2,"inTime":"2020-08-24 11:43:58","outTime":null,"planFlag":"N","lockCtn":"N","makeCtnTime":null,"inRemark":"","outRemark":null,"shapeCode":""}]},{"id":36486,"areaId":595,"rows":2,"columns":1,"columnName":"1","name":"2","status":0,"floor":1,"flag":1,"maxFloor":7,"ctnList":[]},{"id":36506,"areaId":595,"rows":3,"columns":1,"columnName":"1","name":"3","status":0,"floor":1,"flag":1,"maxFloor":7,"ctnList":[]},{"id":36526,"areaId":595,"rows":4,"columns":1,"columnName":"1","name":"4","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36546,"areaId":595,"rows":5,"columns":1,"columnName":"1","name":"5","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36566,"areaId":595,"rows":6,"columns":1,"columnName":"1","name":"6","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36586,"areaId":595,"rows":7,"columns":1,"columnName":"1","name":"7","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36606,"areaId":595,"rows":8,"columns":1,"columnName":"1","name":"8","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36626,"areaId":595,"rows":9,"columns":1,"columnName":"1","name":"9","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36646,"areaId":595,"rows":10,"columns":1,"columnName":"1","name":"10","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36666,"areaId":595,"rows":11,"columns":1,"columnName":"1","name":"11","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36686,"areaId":595,"rows":12,"columns":1,"columnName":"1","name":"12","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36706,"areaId":595,"rows":13,"columns":1,"columnName":"1","name":"13","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36726,"areaId":595,"rows":14,"columns":1,"columnName":"1","name":"14","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36746,"areaId":595,"rows":15,"columns":1,"columnName":"1","name":"15","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36766,"areaId":595,"rows":16,"columns":1,"columnName":"1","name":"16","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36786,"areaId":595,"rows":17,"columns":1,"columnName":"1","name":"17","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36806,"areaId":595,"rows":18,"columns":1,"columnName":"1","name":"18","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36826,"areaId":595,"rows":19,"columns":1,"columnName":"1","name":"19","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36846,"areaId":595,"rows":20,"columns":1,"columnName":"1","name":"20","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36866,"areaId":595,"rows":21,"columns":1,"columnName":"1","name":"21","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36886,"areaId":595,"rows":22,"columns":1,"columnName":"1","name":"22","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36906,"areaId":595,"rows":23,"columns":1,"columnName":"1","name":"23","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36926,"areaId":595,"rows":24,"columns":1,"columnName":"1","name":"24","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]},{"id":36946,"areaId":595,"rows":25,"columns":1,"columnName":"1","name":"25","status":0,"floor":0,"flag":0,"maxFloor":7,"ctnList":[]}]
-const x = data.map(item => item.rows);
-const y = new Array(data[0].maxFloor).fill(0).map((item, index) => data[0].maxFloor - index);
-const mapData = data.map(item => {
-  const ctnList:any[] = item.ctnList.map(item => item);
-  const rest:number = y.length - item.ctnList.length;
-  for(let i=0; i < rest; i++) {
-    ctnList.unshift(null)
-  }
-  return {
-    ...item,
-    ctnList
-  }
-});
+
+
 /* <OverLook 
             {...mapSize}
             controlType={currentRow?.applyType}
@@ -72,7 +59,7 @@ const updatePositionByType = (data:any, type?:string):any => {
       return {...to};
     case 'M_FOR_OVERLOOK':
       Object.keys(from).forEach(key => {
-        from[key] = key === 'floor' ? data[0][from[key]] - 1 : data[0][from[key]];
+        from[key] = data[0][from[key]];
       });
       Object.keys(to).forEach(key => {
         to[key] = data[1][to[key]];
@@ -84,25 +71,32 @@ const updatePositionByType = (data:any, type?:string):any => {
 const moveDataBySelected = (selected:any):string =>  `${selected.areaCode}区 ${selected._rows}列 ${selected._columnName}贝 ${selected._floor}层`
 
 const SelectPosition:React.FC<any> = props => {
+  const currentRowRef = React.useRef<any>();
   const [selectedList, setSelectedList] = useState<any[]>([]);
+  const [active, setActive] = useState<any>({})
   const [visiable, setVisiable] = useState<boolean>(false);
-  const [currentRow, setCurrentRow] = useState<any>({});
-  const [mapSize, setMapSize] = useState<any>({mapWidth:0,mapHeight:0});
+  const [currentRow, setCurrentRow] = useState<any>(null);
+  const [sx, setSx] = useState<number>(0);
   const dispatch = useDispatch();
-  const isFocused = useIsFocused();
-  const { data, overLookReceiving } = useSelector((state:any) => state.overLook);
+  const { data, overLookReceiving, areas,x,y,ctn } = useSelector((state:any) => state.overLook);
   const { records,updating } = useSelector((state:any) => state.moveList);
-  const { id, position='', vt, max=1 } = props.route.params;
+  const { id, vt, max=1 } = props.route.params;
   const handleSelectedSite = useCallback((selected) => {
-    if(selectedList !== selected) {
-      if(selected.length) {
-        selected[selected.length-1]._columnName = parseInt(currentRow?.ctnSizeType,10) >= 40 ? Number(selected[selected.length-1]._columnName) + 1 : selected[selected.length-1]._columnName;
+    const currentRow = currentRowRef.current;
+    if(selected.length) {
+      const isBig=parseInt(currentRow?.ctnSizeType,10) >= 40;
+      const isOdd = selected.length && selected[0].columnName % 2 !== 0;
+      if(currentRow?.id) {
+        if(isBig && isOdd) {
+          return Toast.info('大箱不能放在奇数贝上', 1)
+        } else if(!isBig && !isOdd) {
+          return Toast.info('小箱不能放在偶数贝上', 1)
+        }
       }
-      setSelectedList(selected)
     }
-  }, [selectedList,currentRow]);
+    setSelectedList(selected)
+  }, [setSelectedList]);
   const handleSubmit = useCallback(() => {
-
     const positionParams = max === 1 ? [selectedList[0], vt === 'back' ? 'I' : currentRow.applyType] : [selectedList, 'M_FOR_OVERLOOK']
     if(max >=2 && selectedList.length < max) {
       return Toast.fail('可视化移箱缺少目的位置')
@@ -117,28 +111,51 @@ const SelectPosition:React.FC<any> = props => {
       Toast.success('提交成功',1,() => {
         //props.navigation.goBack();
         setVisiable(false);
-        dispatch(fetchOverLookForYard(() => {
-          setVisiable(true);
-          setSelectedList([])
+        dispatch(fetchOverLookForYard({areaCode:data[0].areaCode, columnName: data[0].columnName},() => {
+          setSelectedList([]);
+          dispatch(resetFindCtn())
         }))
       });
     }))
-  }, [currentRow, selectedList, visiable])
+  }, [currentRow, selectedList, visiable]);
+  useEffect(() => {
+    if(!ctn.length) return setSx(0);
+    const { areaCode, columnName, rowCode } = ctn[0];
+    setSx((rowCode - 1) * 120);
+    dispatch(fetchOverLookForYard({
+      areaCode,
+      columnName
+    }));
+    setActive({
+      areaCode,
+      bayCode:columnName
+    });
+  }, [ctn]);
   useFocusEffect(
     useCallback(() => {
-      isFocused && dispatch(fetchOverLookForYard((data:any) => {
-        const mapMaxRow = getMaxRowColumn(data.areaList, 'rows');
-        const mapMaxColumn = getMaxRowColumn(data.areaList, 'columns');
-        const mapWidth = ( mapMaxColumn.columns+mapMaxColumn.maxColumn ) * 90;
-        const mapHeight = ( mapMaxRow.rows+mapMaxRow.maxRow ) * 45;
-        const getCurrentRowById = records.filter((item:any) => item.id === id);
-        setMapSize({ mapWidth, mapHeight })
-        setCurrentRow(getCurrentRowById[0]);
-        setVisiable(true);
+      const getCurrentRowById = records.filter((item:any) => item.id === id);
+      setCurrentRow({...getCurrentRowById[0]});
+      currentRowRef.current = {...getCurrentRowById[0]}
+      dispatch(fetchArea(() => {
+        const { moveAreaCode, moveColumnName, applyType } = getCurrentRowById[0] || {};
+        if(applyType !== 'I' || !moveAreaCode || !moveColumnName || max > 1) return;
+        dispatch(fetchOverLookForYard({
+          areaCode: moveAreaCode,
+          columnName: moveColumnName
+        }));
+        setActive({
+          areaCode: moveAreaCode,
+          bayCode: moveColumnName
+        });
       }));
       //return;
-    }, [isFocused, records])
+    }, [records])
   );
+  const handleSearchCtn = useCallback(e => {
+    const ctnNo = e.nativeEvent.text.trim();
+    if(!ctnNo) return;
+    dispatch(fetchCtnInfo(ctnNo))
+  }, [])
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.topBar}>
@@ -182,11 +199,87 @@ const SelectPosition:React.FC<any> = props => {
           null
         }
       </View>
-      <View style={{flex:1}}>
+      <View style={{flex:1, flexDirection: 'row'}}>
+        <View style={styles.sideBar}>
+          {
+            areas ? 
+            <React.Fragment>
+              <View style={{padding:6, borderBottomColor: '#e0e0e0', borderBottomWidth: StyleSheet.hairlineWidth}}>
+                <TextInput 
+                  placeholder='搜索箱号' 
+                  placeholderTextColor='#e0e0e0' 
+                  returnKeyType='search'
+                  onSubmitEditing={handleSearchCtn}
+                  style={{margin:0,padding:0}}/>
+              </View>
+              <View style={{flex:1,flexDirection: 'row'}}>
+              <View style={{height: '100%', flex:1, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: '#e0e0e0'}}>
+                <ScrollView>
+                  {
+                    Object.keys(areas).map((item, index) => {
+                      return (
+                        <TouchableHighlight 
+                          key={item} 
+                          underlayColor='#eee' 
+                          onPress={() => {
+                            if(active.areaCode!==item) {
+                              dispatch({
+                                type: 'RESET_MAP_DATA'
+                              });
+                              setActive({
+                                areaCode: item,
+                                areaCodeIndex: index,
+                                bayCodeIndex: -1,
+                                bayCode: ''
+                              })
+                            }
+                          }} 
+                          style={{...styles.sideBarItem, backgroundColor: active.areaCode === item ? color.brand_color : '#fff'}}
+                        >
+                          <Text style={{color: active.areaCode === item ? '#fff' : '#333'}}>{item}区</Text>
+                        </TouchableHighlight>
+                      )
+                    })
+                  }
+                  
+                </ScrollView>
+              </View>
+              <View style={{height: '100%', flex:1}}>
+                <ScrollView>
+                  {
+                    active.areaCode && areas[active.areaCode].map((item: any, index:number) => {
+                      return (
+                        <TouchableHighlight 
+                          key={`${active.areaCode}_${item.columns}`} 
+                          underlayColor='#eee' 
+                          onPress={() => {
+                            dispatch(fetchOverLookForYard({
+                              areaCode: active.areaCode,
+                              columnName: item.columns
+                            }));
+                            setActive({
+                              ...active,
+                              bayCode: item.columns,
+                              bayCodeIndex: index
+                            })
+                          }} 
+                          style={{...styles.sideBarItem, backgroundColor: active.bayCode === item.columns ? color.brand_color : '#fff'}}
+                        >
+                          <Text style={{color: active.bayCode === item.columns ? '#fff' : '#333'}}>{item.columns}贝</Text>
+                        </TouchableHighlight>
+                      )
+                    })
+                  }
+                </ScrollView>
+              </View>
+              </View>
+            </React.Fragment> : null
+          }
+        </View>
         {
           overLookReceiving ? 
           <CenterLoading/> :
-          <BayMap x={x} y={y} data={mapData}/>
+          <BayMap sx={sx} max={max} x={x} y={y} data={data} selected={selectedList} onChange={handleSelectedSite}/>
         }
       </View>
       <View style={styles.bottomBar}>
@@ -200,7 +293,12 @@ const SelectPosition:React.FC<any> = props => {
           }
         </View>
         <View style={styles.inlineButton}>
-          <Button type='ghost' size='small' style={styles.radiusButton} onPress={() => goBack()}>取 消</Button>
+          <Button type='ghost' size='small' style={styles.radiusButton} onPress={() => {
+            dispatch({
+              type: 'RESET_MAP_DATA'
+            });
+            goBack();
+          }}>取 消</Button>
           <Button type='primary' size='small' style={styles.radiusButton} onPress={handleSubmit} disabled={updating} loading={updating}>提 交</Button>
         </View>
       </View>
@@ -258,6 +356,21 @@ const styles = StyleSheet.create({
     color: color.brand_color,
     fontWeight: 'bold',
     fontSize: 14
+  },
+  sideBar: {
+    height: '100%', 
+    backgroundColor: '#fff', 
+    position:'relative', 
+    zIndex: 12, 
+    width: 150
+  },
+  sideBarItem: {
+    width: '100%',
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderBottomColor: '#e0e0e0',
+    borderBottomWidth: StyleSheet.hairlineWidth
   }
 })
 

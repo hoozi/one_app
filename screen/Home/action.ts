@@ -1,15 +1,21 @@
 import { Toast } from '@ant-design/react-native';
 import groupBy from 'lodash/groupBy';
 import { Dispatch } from 'redux';
-import { queryMoveListForWharf, queryMoveListForYard, queryMoveListForYardBack, updateMoveListForWharf, updateMoveListForYard, updateMoveListForYardBack, updateMoveListForNone, updateMoveListWhenNoCtnNo } from '../../api/moveList';
+import { queryMoveListForWharf, queryMoveListForYard, queryMoveListForYard2, queryMoveListForYardBack, updateMoveListForWharf, updateMoveListForYard, updateMoveListForYardBack, updateMoveListForNone, updateMoveListWhenNoCtnNo } from '../../api/moveList';
 import { REQUEST_MOVELIST, RECEIVED_MOVELIST, UPDATING_MOVELIST, UPDATED_MOVELIST } from './actionType';
 import { IGroup,record } from './reducer';
 import { moveListStatusMap } from '../../constants';
 
+const mapService:{ [key:string] : any } = {
+  'truck': queryMoveListForYard,
+  'move': queryMoveListForYard2,
+  'back': queryMoveListForYardBack
+}
+
 export const fetchMoveList = (payload:any={}, type:string='yard', vt:string='truck'):any => async (dispatch:Dispatch) => {
   dispatch(requestMoveList());
   const { callback, ...params } = payload;
-  const queryMoveList = type === 'yard' ? ((vt==='truck' || vt==='move') ? queryMoveListForYard : queryMoveListForYardBack) : queryMoveListForWharf
+  const queryMoveList = type === 'yard' ? mapService[vt] : queryMoveListForWharf
   const response = await queryMoveList(params);
   if(!response || response.code!==0) {
     dispatch(receivedMoveList({records:[],group:{}}));

@@ -10,6 +10,15 @@ export async function queryMoveListForYard(params:any):Promise<any> {
   return request(`/yms/app-move/page?${stringify(_params)}`)
 }
 
+export async function queryMoveListForYard2(params:any):Promise<any> {
+  const _params = {
+    ...params,
+    overFlag: 'N',
+    size: 999
+  }
+  return request(`/yms/app-move/getMovePage?${stringify(_params)}`)
+}
+
 export async function queryMoveListForYardBack(params:any):Promise<any> {
   const _params = {
     ...params,
