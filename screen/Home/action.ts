@@ -1,15 +1,17 @@
 import { Toast } from '@ant-design/react-native';
 import groupBy from 'lodash/groupBy';
 import { Dispatch } from 'redux';
-import { queryMoveListForWharf, queryMoveListForYard, queryMoveListForYard2, queryMoveListForYardBack, updateMoveListForWharf, updateMoveListForYard, updateMoveListForYardBack, updateMoveListForNone, updateMoveListWhenNoCtnNo } from '../../api/moveList';
+import { queryMoveListForWharf, completionCtnNo, queryMoveListForYardI, queryMoveListForYardT, queryMoveListForLoad, queryMoveListForYard2, queryMoveListForYardBack, updateMoveListForWharf, updateMoveListForYard, updateMoveListForYardBack, updateMoveListForNone, updateMoveListWhenNoCtnNo } from '../../api/moveList';
 import { REQUEST_MOVELIST, RECEIVED_MOVELIST, UPDATING_MOVELIST, UPDATED_MOVELIST } from './actionType';
 import { IGroup,record } from './reducer';
 import { moveListStatusMap } from '../../constants';
 
 const mapService:{ [key:string] : any } = {
-  'truck': queryMoveListForYard,
+  'I': queryMoveListForYardI,
+  'T': queryMoveListForYardT,
   'move': queryMoveListForYard2,
-  'back': queryMoveListForYardBack
+  'back': queryMoveListForYardBack,
+  'load': queryMoveListForLoad
 }
 
 export const fetchMoveList = (payload:any={}, type:string='yard', vt:string='truck'):any => async (dispatch:Dispatch) => {
@@ -68,11 +70,22 @@ export const updateWhenNoCtnNo = (payload: any, callback?:Function) => async (di
   callback && callback();
 }
 
-export const update = (payload:any, vt:string='truck', callback?:Function) => async (dispatch: Dispatch) => {
+export const update = (payload:any, vt:string='I', callback?:Function) => async (dispatch: Dispatch) => {
   dispatch(updating());
   const { type, ...params } = payload;
   const updateMoveList = types[vt === 'back' ? 'back' : type];
   const response = await updateMoveList({...params});
+  if(!response || response.code!==0) {
+    dispatch(updated());
+    return;
+  };
+  dispatch(updated());
+  callback && callback();
+}
+
+export const updateCtnNo = (payload:any,callback?:Function) => async (dispatch: Dispatch) => {
+  dispatch(updating());
+  const response = await completionCtnNo(payload);
   if(!response || response.code!==0) {
     dispatch(updated());
     return;

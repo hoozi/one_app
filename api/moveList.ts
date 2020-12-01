@@ -1,9 +1,20 @@
 import request from '../utils/request';
 import { stringify } from 'qs';
 
-export async function queryMoveListForYard(params:any):Promise<any> {
+export async function queryMoveListForYardI(params:any):Promise<any> {
   const _params = {
     ...params,
+    applyType: 'I',
+    overFlag: 'N',
+    size: 999
+  }
+  return request(`/yms/app-move/page?${stringify(_params)}`)
+}
+
+export async function queryMoveListForYardT(params:any):Promise<any> {
+  const _params = {
+    ...params,
+    applyType: 'T',
     overFlag: 'N',
     size: 999
   }
@@ -26,6 +37,15 @@ export async function queryMoveListForYardBack(params:any):Promise<any> {
     size: 999
   }
   return request(`/yms/app-move/getHisApp?${stringify(_params)}`)
+}
+
+export async function queryMoveListForLoad(params:any):Promise<any> {
+  const _params = {
+    ...params,
+    overFlag: 'N',
+    size: 999
+  }
+  return request(`/yms/app-move/getLoadPage?${stringify(_params)}`)
 }
 
 export async function updateMoveListForYard(params?:any):Promise<any> {
@@ -66,6 +86,13 @@ export async function updateMoveListForWharf(params?:any):Promise<any> {
 
 export async function updateMoveListForNone(params?:any):Promise<any> {
   return request('/yms/ctn-info/appMoveCtn', {
+    method: 'POST',
+    body: params
+  })
+}
+
+export async function completionCtnNo(params?:any):Promise<any> {
+  return request('/yms/ctn-apply/moveCheckCtn', {
     method: 'POST',
     body: params
   })

@@ -26,6 +26,7 @@ const BayMap:React.FC<BayMapProps> = ({
   const axisYRef:any = React.useRef();
   const axisXRef:any = React.useRef();
   const sv:any = React.useRef(null);
+  const yv:any = React.useRef(null);
   const handleSelectedChange = React.useCallback((value, type) => {
     const _selected = type === 'delete' ? [...selected.filter(item => {
       if(item.id === value.id) {
@@ -37,10 +38,11 @@ const BayMap:React.FC<BayMapProps> = ({
     onChange(_selected);
   }, [selected]);
   React.useEffect(() => {
+    yv.current && yv.current.scrollToEnd({animated:false});
     sv.current && sv.current.scrollTo({
       x: sx
     })
-  }, [sx,sv])
+  }, [sx,sv,yv])
   return (
     <View style={styles.container}>
       {
@@ -65,7 +67,7 @@ const BayMap:React.FC<BayMapProps> = ({
             }
           </View>
           <View style={{width: '100%'}}>
-            <ScrollView onScroll={e=>{
+            <ScrollView ref={yv} onScroll={e=>{
               axisYRef.current.setNativeProps({
                 style: {
                   top: -e.nativeEvent.contentOffset.y
@@ -126,7 +128,7 @@ const BayMap:React.FC<BayMapProps> = ({
                                     paddingLeft: 8
                                   }}>
                                     <Text style={{fontSize: 12, color:color.brand_color}}>{ctn.ctnNo}</Text>
-                                    <Text style={{fontSize: 12, color:color.brand_color}}>{ctn.ctnOwner}  {ctn.ctnSizeType} <Text style={{color: ctn.normalFlag === 'Y' ? '#52c41a' : '#f5222d'}}>{ctn.normalFlag === 'Y' ? '好箱' : '坏箱'}</Text></Text>
+                                    <Text style={{fontSize: 12, color:color.brand_color}}>{ctn.ctnOwner}  {ctn.ctnSizeType} { ctn.normalFlag ? <Text style={{color: ctn.normalFlag === 'Y' ? '#52c41a' : '#f5222d'}}>{ctn.normalFlag === 'Y' ? '好箱' : '坏箱'}</Text> : ''}</Text>
                                   </View> : 
                                   null
                                 }

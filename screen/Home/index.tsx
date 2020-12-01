@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { color } from '../../constants';
-import { fetchMoveList, update, updateWhenNoCtnNo } from './action';
+import { fetchMoveList, update, updateWhenNoCtnNo, updateCtnNo } from './action';
 import Sidebar from '../../component/Sidebar';
 import Field from '../../component/Field';
 import CaiNiao from '../../icon/CaiNiao';
@@ -22,43 +22,58 @@ import Empty from '../../component/Empty';
 import CenterLoading from '../../component/CenterLoading';
 import { RECORD_TYPE } from './reducer';
 import { reject } from 'lodash';
-
-const fieldRows = [
-  {
-    title: '集卡号',
-    dataIndex: 'numberPlate',
-    need: (data:any) => data.applyType !== 'SHIPMENT' && data.applyType !== 'UNLOADSHIP'
-  },
-  {
-    title: '船名/航次',
-    dataIndex: '_',
-    render: (val:string, data:any) => `${data.vesselEname}/${data.voyage}`,
-    need: (data:any) => data.applyType === 'SHIPMENT' || data.applyType === 'UNLOADSHIP'
-  }, 
-  {
-    title: '箱型尺寸',
-    dataIndex: 'ctnSizeType'
-  },
-  {
-    title: '箱主',
-    dataIndex: 'ctnOwner'
-  },
-  {
-    title: '内外贸',
-    dataIndex: 'ieFlagName'
-  }
-]
 const TaskCard: React.FC<any> = props => {
-  const { data, navigation, onOk, buttonLoading, vt } = props;
-  const fromPosition = `${data.areaCode || '-'}/${data.rowCode || '-'}/${data.columnName || '-'}/${data.floor || '-'}`;
-  const toPosition = `${data.moveAreaCode || '-'}/${data.moveRowCode || '-'}/${data.moveColumnName || '-'}/${data.moveFloor || '-'}`;
+  const { data, navigation, onOk, buttonLoading, vt, onEditCtnNo } = props;
+  const fromPosition = `${data.areaCode || '-'}/${data.columnName || '-'}/${data.rowCode || '-'}/${data.floor || '-'}`;
+  const toPosition = `${data.moveAreaCode || '-'}/${data.moveColumnName || '-'}/${data.moveRowCode || '-'}/${data.moveFloor || '-'}`;
   const position = data.areaCode ? fromPosition : toPosition;
+  const fieldRows = [
+    {
+      title: '集卡号',
+      dataIndex: 'numberPlate',
+      need: (data:any) => data.applyType !== 'SHIPMENT' && data.applyType !== 'UNLOADSHIP'
+    },
+    {
+      title: '船名/航次',
+      dataIndex: '_',
+      render: (val:string, data:any) => `${data.vesselEname}/${data.voyage}`,
+      need: (data:any) => data.applyType === 'SHIPMENT' || data.applyType === 'UNLOADSHIP'
+    }, 
+    {
+      title: '箱型尺寸',
+      dataIndex: 'ctnSizeType'
+    },
+    {
+      title: '箱主',
+      dataIndex: 'ctnOwner'
+    },
+    {
+      title: '内外贸',
+      dataIndex: 'ieFlagName'
+    }
+  ]
+  if(vt === 'load') {
+    fieldRows.push({
+      title: '轨道号',
+      dataIndex: 'platNo'
+    })
+  }
   return (
       <View style={styles.taskCard}>
         <View style={styles.taskCardHeader}>
-          <Text style={styles.taskCardHeaderText}>
-            {data.ctnNo} <Text style={{color: data.normalFlag === 'Y' ? '#52c41a' : '#f5222d'}}>{data.normalFlag === 'Y' ? '好箱' : '坏箱'}</Text>
-          </Text>
+          {
+            vt === 'move' && !data.ctnNo ?
+            <Button 
+              type='primary' 
+              size='small'
+              style={{...styles.okButton, marginLeft: 24}} 
+              onPress={() => onEditCtnNo && onEditCtnNo(data)}>
+                <Text style={{fontWeight: 'bold', fontSize: 15}}>补全箱号</Text>
+            </Button> :
+            <Text style={styles.taskCardHeaderText}>
+              {data.ctnNo} {data.normalFlag ? <Text style={{color: data.normalFlag === 'Y' ? '#52c41a' : '#f5222d'}}>{data.normalFlag === 'Y' ? '好箱' : '坏箱'}</Text> : ''}
+            </Text>
+          }
           <Text style={styles.status}>
             {data.applyTypeName}
           </Text>
@@ -75,7 +90,14 @@ const TaskCard: React.FC<any> = props => {
             </Button>
           }
         </View>
-        <View style={{flexDirection:'row', padding: 8, borderTopWidth: StyleSheet.hairlineWidth,borderTopColor: 'rgba(50, 59, 90, 0.15)'}}>
+        <View style={{
+          flexDirection:'row', 
+          padding: 8, 
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderTopColor: 'rgba(50, 59, 90, 0.15)',
+          borderBottomColor: 'rgba(50, 59, 90, 0.15)',
+        }}>
           <Text style={{fontSize: 14, marginRight: 4, color: 'rgba(50, 59, 90, 0.5)'}}>备注</Text>
           <Text style={{fontSize: 14, color: 'rgba(50, 59, 90, 0.8)'}}>{data.remark}</Text>
         </View>
@@ -87,25 +109,32 @@ const TaskCard: React.FC<any> = props => {
           />
         </View>
         <TouchableHighlight underlayColor='transparent' onPress={() => {
-          return vt!=='back' && (data.applyType === 'SHIPMENT' ) ? null : navigation.navigate('SelectPosition', {
+          return vt!=='back' && (data.applyType === 'SHIPMENT' ) || vt==='load' ? null : navigation.navigate('SelectPosition', {
             position:data.applyType === 'M' ? toPosition : position,
             id: data.id,
             vt
           });
         }} style={{width: '100%'}}>
-          <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingRight: 8}}>
+          <View style={{
+            flexDirection: 'row',  
+            borderTopWidth: StyleSheet.hairlineWidth,
+            borderTopColor: 'rgba(50, 59, 90, 0.15)', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            paddingRight: 8
+          }}>
             <View style={styles.taskCardFooter}>
               <View style={styles.cardListItem}>
-                <Text style={styles.fieldName}>原位置(区/列/贝/层)</Text>
+                <Text style={styles.fieldName}>原位置(区/贝/列/层)</Text>
                 <Text style={styles.fieldValue}>{fromPosition}</Text>
               </View>
               <View style={styles.cardListItem}>
-                <Text style={styles.fieldName}>目的位置(区/列/贝/层)</Text>
+                <Text style={styles.fieldName}>目的位置(区/贝/列/层)</Text>
                 <Text style={styles.fieldValue}>{toPosition}</Text>
               </View>
             </View>
             {
-              (vt==='back' || data.applyType !== 'SHIPMENT') &&
+              (vt==='back' || data.applyType !== 'SHIPMENT' && vt!=='load') &&
               <CaiNiao name='xiayiyeqianjinchakangengduo' size={22} color={color.text_base_color}/>
             }
           </View>
@@ -120,7 +149,7 @@ const Home:React.FC<any> = props => {
   const group = useSelector((state:any) => state.moveList.group);
   const [truckActive, setTruckActive] = useState<number|null>(null);
   const [searchType, setSearchType] = useState<string>('yard');
-  const [viewType, setViewType] = useState<string>('truck');
+  const [viewType, setViewType] = useState<string>('I');
   //const [list, setListByTruckNo] = useState<Array<RECORD_TYPE>>([]);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const dispatch = useDispatch();
@@ -159,6 +188,31 @@ const Home:React.FC<any> = props => {
       });
     }));
   }, [searchType, trucks, group]);
+  const handleEditCtnNo = useCallback(data => {
+    Modal.prompt(
+      '输入箱号',
+      '请补全箱号信息',
+      ctnNo => new Promise((resolve, reject) => {
+        if(!ctnNo) return;
+        try {
+          dispatch(updateCtnNo({
+            ...data,
+            ctnNo
+          },() => {
+            Toast.success('提交成功', 1, () => {
+              resolve();
+              getMoveList({}, searchType, viewType, 0);
+            });
+          }))
+        } catch(e) {
+          reject();
+        }
+      }),
+      'default',
+      undefined,
+      ['请输入']
+    )
+  },[])
   const getMoveList = useCallback((payload:any={}, type:string=searchType, vt:string, ta:number | null ) => {
     const { callback, ...restPayload } = payload;
     dispatch(fetchMoveList({
@@ -204,9 +258,14 @@ const Home:React.FC<any> = props => {
       <StatusBar backgroundColor={color.brand_color} barStyle='light-content'/>
       <Sidebar sideItems={[
         {
-          title: '车辆',
+          title: '进箱',
           value: 'yard',
-          extra: 'truck'
+          extra: 'I'
+        },
+        {
+          title: '提箱',
+          value: 'yard',
+          extra: 'T'
         },
         {
           title: '移箱',
@@ -229,7 +288,7 @@ const Home:React.FC<any> = props => {
           data={records}
           onRefresh={() => handleMoveListRefresh(viewType, 0)}
           refreshing={refreshing}
-          renderItem = {({item}) => <TaskCard vt={viewType} navigation={props.navigation} onOk={handleSiteSubmit} data={item} buttonLoading={updating}/>}
+          renderItem = {({item}) => <TaskCard onEditCtnNo={handleEditCtnNo} vt={viewType} navigation={props.navigation} onOk={handleSiteSubmit} data={item} buttonLoading={updating}/>}
           contentContainerStyle={{paddingHorizontal: 16}}
         /> :
         <Empty>
@@ -307,7 +366,7 @@ const styles = StyleSheet.create({
   },
   taskCardHeader: {
     padding: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    //borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(50, 59, 90, 0.15)',
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -331,9 +390,7 @@ const styles = StyleSheet.create({
   },
   taskCardFooter: {
     paddingVertical: 12,
-    flex:1,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(50, 59, 90, 0.15)',
+    flex:1
   },
   cardListItem: {
     flexDirection: 'row',

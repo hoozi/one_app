@@ -11,6 +11,20 @@ import BayMap from '../../component/BayMap';
 import { color,moveListUpdateType } from '../../constants';
 import CenterLoading from '../../component/CenterLoading';
 
+const fieldMap: { [key:string]: {[key:string]: string} } = {
+  'I': {
+    'areaCode': 'moveAreaCode',
+    'columnName': 'moveColumnName'
+  },
+  'T': {
+    'areaCode': 'areaCode',
+    'columnName': 'columnName'
+  },
+  'M': {
+    'areaCode': 'moveAreaCode',
+    'columnName': 'moveColumnName'
+  }
+}
 
 /* <OverLook 
             {...mapSize}
@@ -73,7 +87,7 @@ const moveDataBySelected = (selected:any):string =>  `${selected.areaCode}区 ${
 const SelectPosition:React.FC<any> = props => {
   const currentRowRef = React.useRef<any>();
   const [selectedList, setSelectedList] = useState<any[]>([]);
-  const [active, setActive] = useState<any>({})
+  const [active, setActive] = useState<any>({areaCode: 0, bayCode: 0})
   const [visiable, setVisiable] = useState<boolean>(false);
   const [currentRow, setCurrentRow] = useState<any>(null);
   const [sx, setSx] = useState<number>(0);
@@ -109,12 +123,16 @@ const SelectPosition:React.FC<any> = props => {
       vt,
       () => {
       Toast.success('提交成功',1,() => {
-        //props.navigation.goBack();
         setVisiable(false);
-        dispatch(fetchOverLookForYard({areaCode:data[0].areaCode, columnName: data[0].columnName},() => {
-          setSelectedList([]);
-          dispatch(resetFindCtn())
-        }))
+        setSelectedList([]);
+        dispatch(resetFindCtn());
+        props.navigation.goBack();
+        if(max > 1) {
+          dispatch(fetchOverLookForYard({areaCode:data[0].areaCode, columnName: data[0].columnName},() => {
+            setSelectedList([]);
+            dispatch(resetFindCtn())
+          }))
+        }
       });
     }))
   }, [currentRow, selectedList, visiable]);
@@ -137,15 +155,18 @@ const SelectPosition:React.FC<any> = props => {
       setCurrentRow({...getCurrentRowById[0]});
       currentRowRef.current = {...getCurrentRowById[0]}
       dispatch(fetchArea(() => {
-        const { moveAreaCode, moveColumnName, applyType } = getCurrentRowById[0] || {};
-        if(applyType !== 'I' || !moveAreaCode || !moveColumnName || max > 1) return;
-        dispatch(fetchOverLookForYard({
-          areaCode: moveAreaCode,
-          columnName: moveColumnName
+        const { applyType } = getCurrentRowById[0] || {};
+        if(vt==='back' || max > 1) return;
+        const areaCode = getCurrentRowById[0][fieldMap[applyType].areaCode];
+        const columnName = getCurrentRowById[0][fieldMap[applyType].columnName];
+        console.log(fieldMap[applyType].areaCode, areaCode, columnName);
+        (areaCode && columnName) && dispatch(fetchOverLookForYard({
+          areaCode,
+          columnName
         }));
         setActive({
-          areaCode: moveAreaCode,
-          bayCode: moveColumnName
+          areaCode: areaCode,
+          bayCode: columnName
         });
       }));
       //return;
@@ -202,7 +223,7 @@ const SelectPosition:React.FC<any> = props => {
       <View style={{flex:1, flexDirection: 'row'}}>
         <View style={styles.sideBar}>
           {
-            areas ? 
+            JSON.stringify(areas) !== '{}' ? 
             <React.Fragment>
               <View style={{padding:6, borderBottomColor: '#e0e0e0', borderBottomWidth: StyleSheet.hairlineWidth}}>
                 <TextInput 
@@ -247,7 +268,7 @@ const SelectPosition:React.FC<any> = props => {
               <View style={{height: '100%', flex:1}}>
                 <ScrollView>
                   {
-                    active.areaCode && areas[active.areaCode].map((item: any, index:number) => {
+                    active.areaCode ? areas[active.areaCode].map((item: any, index:number) => {
                       return (
                         <TouchableHighlight 
                           key={`${active.areaCode}_${item.columns}`} 
@@ -268,7 +289,7 @@ const SelectPosition:React.FC<any> = props => {
                           <Text style={{color: active.bayCode === item.columns ? '#fff' : '#333'}}>{item.columns}贝</Text>
                         </TouchableHighlight>
                       )
-                    })
+                    }) : null
                   }
                 </ScrollView>
               </View>

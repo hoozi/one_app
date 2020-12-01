@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { columns_type } from '../index';
+import { columns_type, IColumn } from '../index';
 
 /* interface IRow {
   columns: any;
@@ -25,15 +25,15 @@ const alignMap:IAlign = {
 const Row:React.FC<any> = props => {
   const { data, columns, index } = props;
   return (
-    <View style={styles.tableRow}>
+    <View style={{...styles.tableRow, width: columns.reduce((sum:number,cur:any) => sum+(cur.width || 100), 0)}}>
       {
         columns.map((column:any) => {
           const { align='left' } = column;
           const alignItems = alignMap[align];
           return (
             column.render ? 
-            <View style={{...styles.tableTd, alignItems}}>{column.render(data[column.dataIndex], data, index)}</View> : 
-            <Text style={{...styles.tableTd, textAlign: align}}>{data[column.dataIndex]}</Text>
+            <View style={{...styles.tableTd, width: column.width || 100, alignItems}}>{column.render(data[column.dataIndex], data, index)}</View> : 
+            <Text style={{...styles.tableTd, width: column.width || 100,textAlign: align}}>{data[column.dataIndex]}</Text>
           )
         })
       }
@@ -68,7 +68,6 @@ const styles = StyleSheet.create({
   },
   tableTd: {
     paddingHorizontal: 8,
-    flex: 1,
     fontSize: 12
   }
 })
